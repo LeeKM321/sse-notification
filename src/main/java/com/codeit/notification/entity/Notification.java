@@ -1,16 +1,14 @@
 package com.codeit.notification.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "notifications")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 @AllArgsConstructor
 @Builder
 public class Notification {
