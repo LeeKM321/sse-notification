@@ -51,6 +51,12 @@ function connect() {
         showNotificationToast(announcement);
     });
 
+    // ping 이벤트 처리 (연결 유지)
+    eventSource.addEventListener('ping', (event) => {
+        console.log('Ping 수신', new Date().toLocaleTimeString());
+        // 필요하다면 UI 업데이트 로직 추가...
+    });
+
     // 에러 처리
     eventSource.onerror = (error) => {
         console.error('SSE 에러:', error);
@@ -450,6 +456,7 @@ function getTimeAgo(dateString) {
     
     return date.toLocaleDateString('ko-KR');
 }
+
 
 // 페이지 로드 시 브라우저 알림 권한 요청
 window.addEventListener('load', () => {
