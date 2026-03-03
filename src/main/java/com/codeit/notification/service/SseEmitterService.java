@@ -1,5 +1,7 @@
 package com.codeit.notification.service;
 
+import com.codeit.notification.model.SseEvent;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -8,6 +10,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -16,10 +19,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class SseEmitterService {
 
     @Value("${notification.timeout}")
     private Long timeout;
+
+    private final SseEventStore sseEventStore;
 
     // 사용자별 SseEmitter 저장소
     // key: userId, Value: SseEmitter
@@ -34,7 +40,7 @@ public class SseEmitterService {
      *
      * @return SseEmitter
      */
-    public SseEmitter createEmitter(String userId) {
+    public SseEmitter createEmitter(String userId, String lastEventId) {
         SseEmitter emitter = new SseEmitter(timeout);
 
         // 기존 연결이 있다면 종료
@@ -71,6 +77,10 @@ public class SseEmitterService {
                             .name("connect")
                             .data("SSE 연결이 수립되었습니다.")
             );
+
+            // 유실된 이벤트(알림) 복원
+            restoreMissedEvents(userId, lastEventId, emitter);
+
         } catch (IOException e) {
             log.error("초기 메시지 전송 실패 - 사용자: {}", userId, e);
             emitters.remove(userId);
@@ -80,10 +90,32 @@ public class SseEmitterService {
         return emitter;
     }
 
+    private void restoreMissedEvents(String userId, String lastEventId, SseEmitter emitter) {
+        if (lastEventId == null || lastEventId.isEmpty()) {
+            return;
+        }
+
+        try {
+            List<SseEvent> missedEvents = sseEventStore.getEventSince(userId, lastEventId);
+            for (SseEvent event : missedEvents) {
+                emitter.send(SseEmitter.event()
+                        .id(event.getEventId())
+                        .name(event.getEventName())
+                        .data(event.getData()));
+            }
+        } catch (IOException e) {
+            log.error("이벤트 복원 실패!", e);
+        }
+
+    }
+
     /**
      * 특정 사용자에게 알림 전송
      */
     public void sendToUser(String userId, String eventName, Object data) {
+
+        String eventId = sseEventStore.saveEvent(userId, eventName, data);
+
         SseEmitter emitter = emitters.get(userId);
 
         if (emitter == null) {
@@ -94,6 +126,7 @@ public class SseEmitterService {
         try {
             emitter.send(
                     SseEmitter.event()
+                            .id(eventId)
                             .name(eventName)
                             .data(data)
             );

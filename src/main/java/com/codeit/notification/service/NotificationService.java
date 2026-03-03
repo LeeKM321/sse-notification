@@ -49,12 +49,15 @@ public class NotificationService {
      */
     @Async
     public void sendNotificationToUser(String userId, Notification notification) {
-        if (sseEmitterService.isConnected(userId)) {
-            sseEmitterService.sendToUser(userId, "notification", notification);
-            log.info("실시간 알림 전송 성공 - 사용자: {}, 알림 ID: {}", userId, notification.getId());
-        } else {
-            log.info("사용자가 연결되어 있지 않음 - 사용자: {}, 알림은 DB에 저장됨", userId);
-        }
+//        if (sseEmitterService.isConnected(userId)) {
+//            sseEmitterService.sendToUser(userId, "notification", notification);
+//            log.info("실시간 알림 전송 성공 - 사용자: {}, 알림 ID: {}", userId, notification.getId());
+//        } else {
+//            log.info("사용자가 연결되어 있지 않음 - 사용자: {}, 알림은 DB에 저장됨", userId);
+//        }
+        sseEmitterService.sendToUser(userId, "notification", notification);
+        log.info("실시간 알림 전송 성공 - 사용자: {}, 알림 ID: {}", userId, notification.getId());
+
     }
 
     /**

@@ -3,6 +3,7 @@ let eventSource = null;
 let currentUserId = null;
 let currentFilter = 'ALL';
 let notifications = [];
+let lastEventId = null;
 
 /**
  * SSE 연결
@@ -24,19 +25,28 @@ function connect() {
     }
 
     // SSE 연결 생성
-    eventSource = new EventSource(`/api/sse/connect?userId=${userId}`);
+    let connectUrl = `/api/sse/connect?userId=${userId}`;
+    lastEventId = localStorage.getItem(`lastEventId_${currentUserId}`);
+    if (lastEventId) {
+        connectUrl += `&lastEventId=${lastEventId}`;
+    }
+    eventSource = new EventSource(connectUrl);
 
     // 연결 성공
     eventSource.addEventListener('connect', (event) => {
         console.log('SSE 연결 성공:', event.data);
         updateConnectionStatus(true);
         showNotificationSection();
-        loadNotifications();
     });
 
     // 알림 수신
     eventSource.addEventListener('notification', (event) => {
         console.log('알림 수신:', event.data);
+        if (event.lastEventId) {
+            lastEventId = event.lastEventId;
+            localStorage.setItem(`lastEventId_${currentUserId}`, lastEventId);
+        }
+
         const notification = JSON.parse(event.data);
         addNotificationToList(notification, true);
         updateUnreadCount();

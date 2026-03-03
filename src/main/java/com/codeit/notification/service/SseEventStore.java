@@ -64,6 +64,8 @@ public class SseEventStore {
      */
     public List<SseEvent> getEventSince(String userId, String lastEventId) {
         List<SseEvent> userEvents = eventStore.get(userId);
+        System.out.println("lastEventId = " + lastEventId);
+        System.out.println("userEvents = " + userEvents);
 
         // 1. 보관함이 텅 비었다면 빈 목록 반환
         if (userEvents == null || userEvents.isEmpty()) {
