@@ -1,5 +1,6 @@
 package com.codeit.notification.service;
 
+import com.codeit.notification.controller.NotificationController;
 import com.codeit.notification.entity.Notification;
 import com.codeit.notification.entity.NotificationType;
 import com.codeit.notification.repository.NotificationRepository;
@@ -21,13 +22,15 @@ public class NotificationService {
     private final SseEmitterService sseEmitterService;
 
     @Transactional
-    public void createAndSendnotification(String userId, NotificationType type, String title, String message) {
+    public Notification createAndSendNotification(String userId, NotificationType type, String title, String message) {
 
         // 알림 객체 생성 -> DB 저장
         Notification notification = Notification.create(userId, type, title, message);
         notification = notificationRepository.save(notification);
 
         sendNotificationToUser(userId, notification);
+
+        return notification;
     }
 
     // 링크가 있는 알림 전송
@@ -141,6 +144,20 @@ public class NotificationService {
     }
 
 
+    public void broadcastAnnouncement(NotificationController.AnnouncementRequest request) {
+
+        Notification announcement = Notification.builder()
+                .userId("ALL")
+                .type(NotificationType.ANNOUNCEMENT)
+                .title(request.title())
+                .message(request.message())
+                .read(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        notificationRepository.save(announcement);
+        sseEmitterService.broadcast("announcement", announcement);
+    }
 }
 
 
